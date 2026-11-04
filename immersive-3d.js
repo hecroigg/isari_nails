@@ -4,33 +4,52 @@ const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const coarse=matchMedia("(pointer: coarse)").matches;
 const palette={violeta:0xa75ac1,rosa:0xf2a1cd,vino:0x8f315e,negro:0x30243e};
 function nailShape(){
- const s=new THREE.Shape();s.moveTo(-.31,-1.05);s.bezierCurveTo(-.34,-.55,-.43,.25,-.33,.69);s.bezierCurveTo(-.25,1.02,-.12,1.12,0,1.12);s.bezierCurveTo(.12,1.12,.25,1.02,.33,.69);s.bezierCurveTo(.43,.25,.34,-.55,.31,-1.05);s.quadraticCurveTo(0,-1.15,-.31,-1.05);
- const g=new THREE.ExtrudeGeometry(s,{depth:.16,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.065,bevelThickness:.075,curveSegments:20});
+ // Slim, anatomically plausible almond-shaped press-on tip, rather than a rounded rectangular block.
+ const shape=new THREE.Shape();
+ shape.moveTo(-.36,-1.05);
+ shape.bezierCurveTo(-.43,-.68,-.42,.18,-.28,.64);
+ shape.bezierCurveTo(-.19,.91,-.075,1.10,0,1.13);
+ shape.bezierCurveTo(.075,1.10,.19,.91,.28,.64);
+ shape.bezierCurveTo(.42,.18,.43,-.68,.36,-1.05);
+ shape.quadraticCurveTo(0,-1.16,-.36,-1.05);
+ const g=new THREE.ExtrudeGeometry(shape,{depth:.065,bevelEnabled:true,bevelSegments:9,steps:1,bevelSize:.045,bevelThickness:.085,curveSegments:40});
+ const p=g.attributes.position;
+ // Curved nail bed, with subtly convex upper surface, not a flat slab.
+ for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);if(z>.025)p.setZ(i,z+.115*(1-Math.min(1,Math.pow(x/.45,2)))*(.8+.2*Math.cos(y*1.5)))}
  g.computeVertexNormals();g.center();return g;
 }
 const geometry=nailShape();
 function rendererFor(el){
- const r=new THREE.WebGLRenderer({alpha:true,antialias:!coarse,powerPreference:"low-power"});
- r.setPixelRatio(Math.min(devicePixelRatio,coarse?1.4:2));r.setClearColor(0xffffff,0);r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.55;
+ const r=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:"low-power"});
+ r.setPixelRatio(Math.min(devicePixelRatio,coarse?2:2.5));r.setClearColor(0xffffff,0);r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.18;
  r.domElement.className="isari-webgl";r.domElement.setAttribute("aria-hidden","true");el.appendChild(r.domElement);return r;
 }
 function setLights(scene){
  scene.add(new THREE.AmbientLight(0xffe9fc,2.4));
  const key=new THREE.DirectionalLight(0xffffff,4.3);key.position.set(-3,6,9);scene.add(key);
- const pink=new THREE.PointLight(0xff78d4,85);pink.position.set(4,2,3);scene.add(pink);
- const violet=new THREE.PointLight(0x9955ff,60);violet.position.set(-4,-2,2);scene.add(violet);
+ const pink=new THREE.PointLight(0xffb2e1,35);pink.position.set(4,2,3);scene.add(pink);
+ const violet=new THREE.PointLight(0xbda1ed,28);violet.position.set(-4,-2,2);scene.add(violet);
 }
-function buildSet(color=palette.violeta){
+function buildSet(){
  const group=new THREE.Group();
+ const colors=[0xf2d4dc,0xed7c97,0x73345f,0xf7e5e7,0xec8c9f];
  for(let i=0;i<5;i++){
-  const material=new THREE.MeshPhysicalMaterial({color,metalness:.12,roughness:.16,clearcoat:1,clearcoatRoughness:.08,side:THREE.DoubleSide});
+  const material=new THREE.MeshPhysicalMaterial({color:colors[i],metalness:.03,roughness:.13,clearcoat:1,clearcoatRoughness:.055,side:THREE.DoubleSide});
   const nail=new THREE.Mesh(geometry,material);
-  nail.position.set((i-2)*.85,Math.cos((i-2)*.63)*.25,Math.abs(i-2)*-.16);
-  nail.rotation.z=(i-2)*-.13;nail.rotation.y=(i-2)*.09;
-  nail.scale.set(i===2?1.02:.88,i===2?1.2:i===0||i===4?.84:1.06,1);
+  nail.position.set((i-2)*.86,Math.cos((i-2)*.63)*.19,-Math.abs(i-2)*.10);
+  nail.rotation.z=(i-2)*-.115;nail.rotation.y=(i-2)*.045;
+  nail.scale.set(i===2?1.02:.9,i===2?1.16:i===0||i===4?.91:1.06,1);
   group.add(nail);
-  const motif=new THREE.Mesh(new THREE.OctahedronGeometry(.11,0),new THREE.MeshPhysicalMaterial({color:0xfff0fc,metalness:.65,roughness:.12,emissive:0xffb4ed,emissiveIntensity:.25}));
-  motif.position.set(nail.position.x,nail.position.y+.22,nail.position.z+.18);motif.rotation.z=.3;group.add(motif);
+  // Realistic, fine gold French-tip accent, flush with the nail surface.
+  if(i===0||i===3){
+   const gold=new THREE.Mesh(new THREE.TorusGeometry(.285,.013,5,64,Math.PI),new THREE.MeshStandardMaterial({color:0xb77b56,metalness:.65,roughness:.22}));
+   gold.position.set(nail.position.x,nail.position.y-.53,nail.position.z+.205);gold.rotation.z=Math.PI;gold.scale.set(1,.33,1);group.add(gold);
+  }
+  // Small dark organic tortoiseshell spots on the accent nails.
+  if(i===1||i===4){for(let j=0;j<5;j++){
+   const spot=new THREE.Mesh(new THREE.SphereGeometry(.075+(j%3)*.012,12,8),new THREE.MeshPhysicalMaterial({color:j%2?0x6e274b:0x3d2135,transparent:true,opacity:.76,roughness:.3}));
+   spot.scale.set(1.15,.6,.12);spot.position.set(nail.position.x+Math.sin(j*2.7)*.17,nail.position.y+(j-2)*.25,nail.position.z+.24);group.add(spot);
+  }}
  }
  return group;
 }
@@ -38,7 +57,7 @@ function particles(scene,count=45){
  const geo=new THREE.BufferGeometry(),arr=new Float32Array(count*3);
  for(let i=0;i<count;i++){arr[i*3]=(Math.random()-.5)*13;arr[i*3+1]=(Math.random()-.5)*11;arr[i*3+2]=(Math.random()-.5)*7-2}
  geo.setAttribute("position",new THREE.BufferAttribute(arr,3));
- const material=new THREE.PointsMaterial({color:0xffffff,size:.07,transparent:true,opacity:.83,sizeAttenuation:true,depthWrite:false});
+ const material=new THREE.PointsMaterial({color:0xffffff,size:.035,transparent:true,opacity:.83,sizeAttenuation:true,depthWrite:false});
  const mesh=new THREE.Points(geo,material);scene.add(mesh);return mesh;
 }
 const views=[];
