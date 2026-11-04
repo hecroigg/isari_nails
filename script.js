@@ -27,3 +27,14 @@ filters.forEach(button=>button.addEventListener('click',()=>{const selected=butt
 const ideaForm=document.getElementById('idea-form');const hint=document.getElementById('form-hint');const followup=document.getElementById('followup-dm');
 ideaForm.addEventListener('submit',async e=>{e.preventDefault();const form=new FormData(ideaForm);const style=form.get('estilo')||'Personalizado';const details=String(form.get('detalle')||'').trim();const message=`¡Hola, Isari Nails! ♡ Me gustaría consultar un set press-on.\nEstilo: ${style}.${details?'\nMi idea: '+details:''}\n¿Podéis contarme cómo hacer el pedido?`;let copied=false;try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(message);copied=true}}catch(err){copied=false}if(!copied){try{const field=document.createElement('textarea');field.value=message;field.setAttribute('readonly','');field.style.cssText='position:fixed;left:-9999px;top:-9999px';document.body.appendChild(field);field.select();copied=document.execCommand('copy');field.remove()}catch(err){copied=false}}if(copied){hint.textContent='✓ Idea copiada. Abre Instagram y pega el texto en la conversación.';hint.style.color='#5a3e6c';followup.hidden=false}else{hint.textContent='No se ha podido copiar automáticamente. Copia el texto que aparece a continuación y envíalo desde Instagram.';hint.style.color='#773f65';const field=document.createElement('textarea');field.value=message;field.readOnly=true;field.rows=5;field.className='message-copy-fallback';hint.after(field);field.select();followup.hidden=false}});
 document.getElementById('year').textContent=String(new Date().getFullYear());
+
+// Desktop-only depth interaction: photographs keep their real texture and edges.
+if(!prefersReduced && !coarsePointer){
+ const stage=document.getElementById('hero-stage');
+ if(stage){
+  let frame=0, tx=0, ty=0, cx=0, cy=0;
+  const update=()=>{cx+=(tx-cx)*.09;cy+=(ty-cy)*.09;stage.style.transform=`perspective(1200px) rotateY(${cx*3.6}deg) rotateX(${cy*-2.5}deg)`;if(Math.abs(tx-cx)+Math.abs(ty-cy)>.002)frame=requestAnimationFrame(update);else frame=0};
+  stage.addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();tx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/(r.width/2)));ty=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/(r.height/2)));if(!frame)frame=requestAnimationFrame(update)},{passive:true});
+  stage.addEventListener('pointerleave',()=>{tx=0;ty=0;if(!frame)frame=requestAnimationFrame(update)});
+ }
+}

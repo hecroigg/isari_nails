@@ -24,3 +24,8 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.js .reveal{opacity:1;transform:none}.marquee-track{animation:none}}
 
 .followup-dm{margin-top:10px}.followup-dm[hidden]{display:none}
+
+/* Final production polish */
+.hero-stage{transform-style:preserve-3d;transform-origin:50% 50%}.hero-photo{backface-visibility:hidden}.hero-stage .floating-note{transform:translateZ(40px)}.hero-stage .hero-doodle{transform:translateZ(26px)}
+@media(min-width:901px){.hero-stage{transition:transform .2s ease-out}}
+@media(prefers-reduced-motion:reduce){.hero-stage{transform:none!important}}
